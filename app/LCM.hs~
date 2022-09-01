@@ -1,0 +1,72 @@
+module LCM where
+
+-- Enter your code here. Read input from STDIN. Print output to STDOUT
+
+import Text.Parsec
+import Control.Monad
+import Data.Either
+import Control.Applicative hiding (optional, (<|>))
+
+main = do 
+  len <- read <$> getLine :: IO Int
+  arrStr <- getLine
+  numQs <- fmap read getLine :: IO Int
+  queries <- replicateM numQs getParseQuery 
+  
+
+  --queries <- (fmap.fmap) (fromRight undefined) $ mapM (runParserT parseQuery () "") queryStrings
+  arr0 <- runParserT parseArray () "" arrStr
+  
+  case arr0 of 
+    Right arrInit -> recursePrintQueries arrInit queries 
+    Left _ -> error "invalid input"
+    
+    
+    
+getParseQuery :: IO Query
+getParseQuery = do 
+   queryString <- getLine
+   let Right query = parse parseQuery "" queryString
+   pure query   
+  
+  
+
+recursePrintQueries :: [Int] -> [Query] -> IO ()
+recursePrintQueries _ [] = pure ()
+recursePrintQueries arrNow (q:qs) = case q of 
+   U i mult -> recursePrintQueries (performU (i, mult) arrNow) qs
+   Q iStart iEnd -> do 
+      -- drop then take diff
+      let subA = take (iEnd - iStart + 1) $ drop iStart arrNow
+      let lowestCommon = foldr lcm 1 subA
+      print lowestCommon
+      recursePrintQueries arrNow qs             
+   
+
+
+-- U mutates the valid input 
+data Query = Q Int Int | U Int Int 
+
+-- (Idx, Multiplier) 
+-- 
+performU :: (Int, Int) -> [Int] -> [Int]
+performU (idx, mult) lis = 
+   let 
+     end' = drop idx lis
+     multFirst (f:rest) = f * mult : rest
+   in  
+     take idx lis <> (multFirst end') 
+
+parseArray :: Stream s m Char => ParsecT s u m [Int]
+parseArray = do 
+   asCharList <- some ((some digit) <* (optional (char ' ')))
+   pure $ fmap (read :: String -> Int) $ asCharList 
+   
+parseQuery :: Stream s m Char => ParsecT s u m Query
+parseQuery = do 
+        trueIfQ <- (True <$ (char 'Q') <|> (False <$ (char 'U'))) <* space
+        a <- some digit <* space 
+        b <- some digit
+        let a' = read a :: Int 
+        let b' = read b :: Int
+        pure $ if trueIfQ then Q a' b' else U a' b'        
