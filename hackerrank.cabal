@@ -52,6 +52,7 @@ executable hackerrank
                     , regex-tdfa
                     , parsec
                     , unordered-containers
+                    , containers
                     , attoparsec
                     , comonad                    
                     , deepseq

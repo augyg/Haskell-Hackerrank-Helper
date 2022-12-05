@@ -1,0 +1,74 @@
+{-# LANGUAGE DuplicateRecordFields, FlexibleInstances, UndecidableInstances #-}
+
+module Grid where
+
+import Control.Monad
+import Data.Array
+import Data.Bits
+import Data.List
+import Data.List.Split
+--import Data.Set
+--import Data.Text hiding (isPrefixOf, words)
+import Debug.Trace
+import System.Environment
+import System.IO
+import System.IO.Unsafe
+
+import Data.List (isPrefixOf)
+--
+-- Complete the 'gridSearch' function below.
+--
+-- The function is expected to return a STRING.
+-- The function accepts following parameters:
+--  1. STRING_ARRAY G
+--  2. STRING_ARRAY P
+--
+
+-- LAW!!!
+-- -[1..5] !! idx == (idx + 1)
+
+-- Returns the idx at which the pattern starts 
+--lineSearch :: Int -> [Int] -> [Int] -> Maybe Int 
+lineSearch _ [] _ = Nothing
+lineSearch idx xs l = if isPrefixOf l xs then Just idx else lineSearch (idx+1) (Data.List.tail xs) l 
+
+gridSearch ((g:grid),(l:patern)) = case lineSearch 0 g l of 
+    Just idx -> investigateTail idx grid patern   
+    Nothing -> gridSearch (grid,(l:patern))
+  
+    -- Write your code here
+
+--investigateTail :: Int -> [[Int]] -> [[Int]] -> Bool
+investigateTail _ _ [] = True 
+investigateTail _ [] (p:ps) = False 
+investigateTail idx (g:grid) (p:patern) = 
+    isPrefixOf p (Data.List.drop idx g) && investigateTail idx grid patern
+
+
+readMultipleLinesAsStringArray :: Int -> IO [String]
+readMultipleLinesAsStringArray 0 = return []
+readMultipleLinesAsStringArray n = do
+    line <- getLine
+    rest <- readMultipleLinesAsStringArray(n - 1)
+    return (line : rest)
+
+linesToCases :: [String] -> [([String], [String])]
+linesToCases [] = []
+linesToCases (l:lines) = 
+   let 
+     (len:_:[]) = words l 
+     (grid, (info:rest)) = splitAt (read len) lines 
+     (lenPat:_:[]) = words info
+     (pat, rest') = splitAt (read lenPat) rest 
+   in (grid, pat) : linesToCases rest' 
+
+main :: IO()
+main = do
+    stin <- getContents 
+    let (numInputs:liness) = lines stin
+    --let lineCount:_:[] = words size 
+    --let (grid, rest) = splitAt (read lineCount) liness
+    let cases = linesToCases liness
+    mapM_ (\bool -> if bool then print YES else print NO) $ fmap gridSearch cases 
+   
+data YESNO = YES | NO deriving Show

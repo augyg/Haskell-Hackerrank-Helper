@@ -17,10 +17,14 @@ main = main' stdin
 main' :: Handle -> IO ()
 main' handle = do 
   len <- read <$> (hGetLine handle) :: IO Int
-  arrStr <- hGetLine handle 
+  print len
+  arrStr <- hGetLine handle
+  print arrStr
   numQs <- fmap read (hGetLine handle) :: IO Int
-  queries <- replicateM numQs getParseQuery 
-  
+  print "three"
+  queries <- replicateM numQs (getParseQuery handle)
+  mapM_ print queries 
+  print "four"
 
   --queries <- (fmap.fmap) (fromRight undefined) $ mapM (runParserT parseQuery () "") queryStrings
   arr0 <- runParserT parseArray () "" arrStr
@@ -31,9 +35,9 @@ main' handle = do
     
     
     
-getParseQuery :: IO Query
-getParseQuery = do 
-   queryString <- getLine
+getParseQuery :: Handle -> IO Query
+getParseQuery hdl = do 
+   queryString <- hGetLine hdl
    let Right query = parse parseQuery "" queryString
    pure query   
   
@@ -42,21 +46,27 @@ getParseQuery = do
 recursePrintQueries :: [Int] -> [Query] -> IO ()
 recursePrintQueries _ [] = pure ()
 recursePrintQueries arrNow (q:qs) = case q of 
-   U i mult -> recursePrintQueries (performU (i, mult) arrNow) qs
+   U i mult -> do
+     print arrNow 
+     recursePrintQueries (performU (i, mult) arrNow) qs
    Q iStart iEnd -> do 
       -- drop then take diff
       let subA = take (iEnd - iStart + 1) $ drop iStart arrNow
       let lowestCommon = foldr lcm 1 subA
-      print lowestCommon
+      print $ lowestCommon `rem` mm
       recursePrintQueries arrNow qs             
    
 
+mm = 10^9+7
 
 -- U mutates the valid input 
-data Query = Q Int Int | U Int Int 
+data Query = Q Int Int | U Int Int deriving Show 
 
 -- (Idx, Multiplier) 
--- 
+--
+performU' :: (Int, Int) -> [Int] -> [Int]
+performU' = undefined
+
 performU :: (Int, Int) -> [Int] -> [Int]
 performU (idx, mult) lis = 
    let 
